@@ -1,0 +1,10 @@
+{
+  "entities": {
+    "asset1": {
+      "versions": [{ "primary_string": "file:///asset/1" }]
+    },
+    "asset2": {
+      "versions": [{ "primary_string": "file:///asset/2" }]
+    }
+  }
+}

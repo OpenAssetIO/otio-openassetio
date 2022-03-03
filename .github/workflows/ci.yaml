@@ -16,11 +16,11 @@ on:
       - "*.txt"
 
 jobs:
-  test-otio-0130:
+  test:
     env:
       plugin_name: "otio_openassetio"
 
-    name: "OpenTimelineIO 0.13.0"
+    name: Test
     strategy:
       matrix:
         python-version: [3.9, ]
@@ -36,10 +36,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Clone OpenAssetIO
+        uses: actions/checkout@v2
+        with:
+          repository: TheFoundryVisionmongers/OpenAssetIO
+          path: dependencies/OpenAssetIO
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest pytest-cov OpenTimelineIO==0.13.0
+          pip install dependencies/OpenAssetIO
 
       - name: Install Plugin
         run: |
@@ -47,10 +54,11 @@ jobs:
 
       - name: Lint with flake8
         run: |
-          flake8 --show-source --statistics
+          flake8 --show-source --statistics otio_openassetio tests
 
       - name: Test with pytest
         run: |
-          pytest
-
+          pytest tests
+        env:
+          OPENASSETIO_PLUGIN_PATH: dependencies/OpenAssetIO/resources/examples/manager/BasicAssetLibrary/plugin
         shell: bash
