@@ -1,8 +1,6 @@
 # Copyright Contributors to the OpenTimelineIO project
 # Copyright The Foundry Visionmongers Ltd
-#
 # SPDX-License-Identifier: Apache-2.0
-#
 
 import io
 import setuptools

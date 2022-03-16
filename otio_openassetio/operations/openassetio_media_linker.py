@@ -1,7 +1,5 @@
 # Copyright The Foundry Visionmongers Ltd
-#
 # SPDX-License-Identifier: Apache-2.0
-#
 """
 A media linker that resolves media reference URLs via OpenAssetIO if
 their target_url is set to a valid entity reference.
