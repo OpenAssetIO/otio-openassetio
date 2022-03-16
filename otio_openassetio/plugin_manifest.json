@@ -1,0 +1,11 @@
+{
+  "OTIO_SCHEMA": "PluginManifest.1",
+  "media_linkers": [
+    {
+      "OTIO_SCHEMA": "MediaLinker.1",
+      "name": "openassetio_media_linker",
+      "execution_scope": "in process",
+      "filepath": "operations/openassetio_media_linker.py"
+    }
+  ]
+}
