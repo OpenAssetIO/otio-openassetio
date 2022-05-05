@@ -77,6 +77,12 @@ The dev extras will also install the required testing dependencies.
 pip install -e '.[dev]'
 ```
 
+The plugin manifest then needs to be added to the OTIO search paths.
+
+```shell
+export OTIO_PLUGIN_MANIFEST_PATH="`pwd`/otio_openassetio/plugin_manifest.json:${OTIO_PLUGIN_MANIFEST_PATH}"
+```
+
 ### Testing
 
 To run the tests we need the `BasicAssetLibrary` example manager plugin from

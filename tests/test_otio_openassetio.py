@@ -135,6 +135,20 @@ def bal_plugin_env(base_dir, monkeypatch):
     monkeypatch.setenv("OPENASSETIO_PLUGIN_PATH", plugin_dir)
 
 
+@pytest.fixture(autouse=True)
+def otio_plugin_env(base_dir, monkeypatch):
+    """
+    Provides a modified environment with the otio-openassetio
+    plugin manifest on the OTIO search path.
+    """
+    plugin_manifest = os.path.join(
+        base_dir,
+        "otio_openassetio",
+        "plugin_manifest.json"
+    )
+    monkeypatch.setenv("OTIO_PLUGIN_MANIFEST_PATH", plugin_manifest)
+
+
 @pytest.fixture()
 def base_dir():
     """
