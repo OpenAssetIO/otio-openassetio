@@ -1,10 +1,10 @@
 {
   "entities": {
     "asset1": {
-      "versions": [{ "primary_string": "file:///asset/1" }]
+      "versions": [{ "traits": {"locatableContent": { "location": "file:///asset/1" }}}]
     },
     "asset2": {
-      "versions": [{ "primary_string": "file:///asset/2" }]
+      "versions": [{ "traits": {"locatableContent": { "location": "file:///asset/2" }}}]
     }
   }
 }

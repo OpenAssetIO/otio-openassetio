@@ -7,10 +7,14 @@ their target_url is set to a valid entity reference.
 
 from collections import namedtuple
 
-from openassetio import log
+from openassetio import log, Specification
 from openassetio.hostAPI import HostInterface, Session
-from openassetio.specifications import LocaleSpecification
 from openassetio.pluginSystem import PluginSystemManagerFactory
+
+
+import openassetio_mediacreation
+from openassetio_mediacreation.trait import ClipTrait
+from openassetio_mediacreation.trait.entity import LocatableContentTrait
 
 import opentimelineio as otio
 
@@ -36,18 +40,35 @@ def link_media_reference(in_clip, media_linker_argument_map):
     if not isinstance(mr, otio.schema.ExternalReference):
         return
 
+    # The OpenAssetIO session is stateful to allow stable resolution
+    # over time, however this function isn't, so we track a shared
+    # session based on the arguments to the media linker.
     session_state = _sessionState(media_linker_argument_map)
     manager = session_state.session.currentManager()
 
     if not extract_one(manager.isEntityReference([mr.target_url])):
         return
 
+    # Update the locale with more information about this call
+    # This is perhaps more illustrative than useful at this point.
     context = session_state.context
-    context.locale.clipName = in_clip.name
+    ClipTrait(context.locale).setName(in_clip.name)
 
-    mr.target_url = extract_one(
-        manager.resolveEntityReference([mr.target_url], context)
+    # In this simple implementation, we only need the URL to the media,
+    # so we use the LocatableContentTrait directly. As we don't know the
+    # specifics of what the external reference may point to, using any
+    # particular Specification's traits may end up being wrong. By
+    # requesting just the specific trait we require, it avoids the
+    # manager fetching any data we are not going to use.
+    entity_data = extract_one(
+        manager.resolve(
+            [mr.target_url], {LocatableContentTrait.kId}, context
+        )
     )
+
+    # We then use the concrete accessors of the trait as a view on
+    # the resolved data to ensure we access the correct keys/values.
+    mr.target_url = LocatableContentTrait(entity_data).getLocation()
 
 
 #
@@ -77,17 +98,21 @@ class OTIOHostInterface(HostInterface):
         return "OpenTimelineIO OpenAssetIO Media Linker plugin"
 
 
-class OTIOClipLocale(LocaleSpecification):
+class OTIOClipLocale(Specification):
     """
     An OpenAssetIO Locale that represents API calls for a track clip
     """
 
-    _type = "timeline.track.clip.otio"
+    kTraitIds = {
+        # Describe where we are in the OTIO structure a little
+        openassetio_mediacreation.trait.TimelineTrait.kId,
+        openassetio_mediacreation.trait.TrackTrait.kId,
+        openassetio_mediacreation.trait.ClipTrait.kId,
+        "otio",
+    }
 
-    clipName = LocaleSpecification.TypedProperty(
-        str,
-        doc="The name of the clip in the timeline for which the reference is being resolved.",
-    )
+    def __init__(self):
+        super().__init__(self.kTraitIds)
 
 
 #

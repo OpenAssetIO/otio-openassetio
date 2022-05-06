@@ -60,14 +60,28 @@ python -m venv .venv
 
 ### Dependencies
 
-To use the linker in OpenTimelineIO `openassetio` needs to be installed.
-At present, this requires installation from source:
+To use the linker in OpenTimelineIO `openassetio` and
+`openassetio_mediacreation` need to be installed.
+
+At present, for OpenAssetIO, we require installation from source of the
+`feature/181-coreCppBuild` branch.
 
 ```shell
 mkdir dependencies
-git clone git@github.com:TheFoundryVisionmongers/OpenAssetIO.git dependencies/OpenAssetIO
-pip install dependencies/OpenAssetIO
+git clone -b feature/181-coreCppBuild git@github.com:TheFoundryVisionmongers/OpenAssetIO.git dependencies/OpenAssetIO
+cmake -S dependencies/OpenAssetIO -B build
+cmake --build build --target openassetio-python-py-install
+. dist/bin activate
 ```
+
+The Media Creation library is more straightforward.
+
+```shell
+git clone git@github.com:TheFoundryVisionmongers/OpenAssetIO-MediaCreation
+pip install dependencies/OpenAssetIO-MediaCreation
+```
+
+You will now be in a Python virtual environment with `openassetio` and `openassetio_mediacreation` available.
 
 ### OpenTimelineIO plugin
 
@@ -79,11 +93,14 @@ pip install -e '.[dev]'
 
 ### Testing
 
-To run the tests we need the `BasicAssetLibrary` example manager plugin from
-the OpenAssetIO repository.
+The tests make us of the `BasicAssetLibrary` example manager plugin from
+the OpenAssetIO repository. They include a `pytest` fixture that extends
+the process environment to set the OpenAssetIO plugin search paths to
+the dependencies directory as installed above.
+
+Running the tests is then as follows:
 
 ```shell
-export OPENASSETIO_PLUGIN_PATH=dependencies/OpenAssetIO/resources/examples/manager/BasicAssetLibrary/plugin
 pytest tests
 ```
 
