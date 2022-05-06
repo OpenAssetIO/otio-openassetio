@@ -93,11 +93,14 @@ pip install -e '.[dev]'
 
 ### Testing
 
-To run the tests we need the `BasicAssetLibrary` example manager plugin from
-the OpenAssetIO repository.
+The tests make us of the `BasicAssetLibrary` example manager plugin from
+the OpenAssetIO repository. They include a `pytest` fixture that extends
+the process environment to set the OpenAssetIO plugin search paths to
+the dependencies directory as installed above.
+
+Running the tests is then as follows:
 
 ```shell
-export OPENASSETIO_PLUGIN_PATH=dependencies/OpenAssetIO/resources/examples/manager/BasicAssetLibrary/plugin
 pytest tests
 ```
 

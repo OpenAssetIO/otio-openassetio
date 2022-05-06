@@ -82,6 +82,4 @@ jobs:
         run: |
           . dist/bin/activate
           pytest tests
-        env:
-          OPENASSETIO_PLUGIN_PATH: dependencies/OpenAssetIO/resources/examples/manager/BasicAssetLibrary/plugin
         shell: bash
