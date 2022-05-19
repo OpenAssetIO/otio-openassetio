@@ -38,8 +38,8 @@ jobs:
       - name: Clone OpenAssetIO
         uses: actions/checkout@v2
         with:
-          repository: TheFoundryVisionmongers/OpenAssetIO
-          ref: feature/181-coreCppBuild
+          repository: OpenAssetIO/OpenAssetIO
+          ref: v1.0.0-alpha.1
           path: dependencies/OpenAssetIO
 
       # Don't cache this as python does some system package installs
@@ -58,7 +58,8 @@ jobs:
       - name: Clone OpenAssetIO-MediaCreation
         uses: actions/checkout@v2
         with:
-          repository: TheFoundryVisionmongers/OpenAssetIO-MediaCreation
+          repository: OpenAssetIO/OpenAssetIO-MediaCreation
+          ref: v1.0.0-alpha.1
           path: dependencies/OpenAssetIO-MediaCreation
 
       - name: Install dependencies
