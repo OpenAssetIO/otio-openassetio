@@ -64,11 +64,11 @@ To use the linker in OpenTimelineIO `openassetio` and
 `openassetio_mediacreation` need to be installed.
 
 At present, for OpenAssetIO, we require installation from source of the
-`feature/181-coreCppBuild` branch.
+`v0.0.0-alpha.1` tag.
 
 ```shell
 mkdir dependencies
-git clone -b feature/181-coreCppBuild git@github.com:TheFoundryVisionmongers/OpenAssetIO.git dependencies/OpenAssetIO
+git clone -b v1.0.0-alpha.1 git@github.com:OpenAssetIO/OpenAssetIO.git dependencies/OpenAssetIO
 cmake -S dependencies/OpenAssetIO -B build
 cmake --build build --target openassetio-python-py-install
 . dist/bin activate
@@ -77,7 +77,7 @@ cmake --build build --target openassetio-python-py-install
 The Media Creation library is more straightforward.
 
 ```shell
-git clone git@github.com:TheFoundryVisionmongers/OpenAssetIO-MediaCreation
+git clone -b v1.0.0-alpha.1 git@github.com:OpenAssetIO/OpenAssetIO-MediaCreation
 pip install dependencies/OpenAssetIO-MediaCreation
 ```
 
