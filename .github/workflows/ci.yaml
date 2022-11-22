@@ -46,10 +46,13 @@ jobs:
       # that won't be cached and it then breaks on the next run.
       - name: Build OpenAssetIO
         run: |
-          pip install conan==1.45.0 cmake==3.21 ninja==1.10.2.3 cpplint==1.5.5
+          pip install conan cmake==3.21 ninja==1.10.2.3 cpplint==1.5.5
           conan profile new default --detect --force
           conan profile update settings.compiler.libcxx=libstdc++ default
-          conan install --install-folder ~/.conan --build=missing dependencies/OpenAssetIO/resources/build
+          conan install --install-folder ~/.conan --build=missing \
+            -c tools.system.package_manager:mode=install \
+            -c tools.system.package_manager:sudo=True \
+             dependencies/OpenAssetIO/resources/build
           cmake -S dependencies/OpenAssetIO -B build  \
             --toolchain ~/.conan/conan_paths.cmake \
             --install-prefix $GITHUB_WORKSPACE/dist
