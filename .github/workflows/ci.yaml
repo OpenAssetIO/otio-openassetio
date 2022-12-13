@@ -23,7 +23,7 @@ jobs:
     name: Test
     strategy:
       matrix:
-        python-version: [3.9, ]
+        python-version: [3.9]
 
     runs-on: "ubuntu-latest"
 
@@ -35,55 +35,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Clone OpenAssetIO
-        uses: actions/checkout@v2
-        with:
-          repository: OpenAssetIO/OpenAssetIO
-          ref: v1.0.0-alpha.1
-          path: dependencies/OpenAssetIO
-
-      # Don't cache this as python does some system package installs
-      # that won't be cached and it then breaks on the next run.
-      - name: Build OpenAssetIO
-        run: |
-          pip install conan cmake==3.21 ninja==1.10.2.3 cpplint==1.5.5
-          conan profile new default --detect --force
-          conan profile update settings.compiler.libcxx=libstdc++ default
-          conan install --install-folder ~/.conan --build=missing \
-            -c tools.system.package_manager:mode=install \
-            -c tools.system.package_manager:sudo=True \
-             dependencies/OpenAssetIO/resources/build
-          cmake -S dependencies/OpenAssetIO -B build  \
-            --toolchain ~/.conan/conan_paths.cmake \
-            --install-prefix $GITHUB_WORKSPACE/dist
-          cmake --build build --target openassetio-python-py-install
-
-      - name: Clone OpenAssetIO-MediaCreation
-        uses: actions/checkout@v2
-        with:
-          repository: OpenAssetIO/OpenAssetIO-MediaCreation
-          ref: v1.0.0-alpha.1
-          path: dependencies/OpenAssetIO-MediaCreation
-
-      - name: Install dependencies
-        run: |
-          . dist/bin/activate
-          python -m pip install --upgrade pip
-          pip install flake8 pytest pytest-cov OpenTimelineIO==0.13.0
-          pip install dependencies/OpenAssetIO-MediaCreation
-
       - name: Install Plugin
-        run: |
-          . dist/bin/activate
-          pip install -e .
+        run: pip install -e .[dev]
 
       - name: Lint with flake8
-        run: |
-          . dist/bin/activate
-          flake8 --show-source --statistics otio_openassetio tests
+        run: flake8 --show-source --statistics otio_openassetio tests
 
       - name: Test with pytest
-        run: |
-          . dist/bin/activate
-          pytest tests
+        run: pytest tests
         shell: bash
