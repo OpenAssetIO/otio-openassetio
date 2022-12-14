@@ -26,8 +26,20 @@ setuptools.setup(
             "plugin_manifest.json",
         ],
     },
-    install_requires=["OpenTimelineIO >= 0.12.0"],
-    extras_require={"dev": ["black", "pytest", "twine"]},
+    install_requires=[
+        "OpenTimelineIO >= 0.12.0",
+        "openassetio == 1.0.0a7",
+        "openassetio-mediacreation == 1.0.0a2",
+    ],
+    extras_require={
+        "dev": [
+            "black",
+            "pytest",
+            "flake8",
+            "twine",
+            "openassetio-manager-bal == 1.0.0a3"
+        ]
+    },
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",

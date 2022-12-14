@@ -10,17 +10,6 @@
           }
         }
       ]
-    },
-    "asset2": {
-      "versions": [
-        {
-          "traits": {
-            "openassetio-mediacreation:content.LocatableContent": {
-              "location": "file:///asset/2"
-            }
-          }
-        }
-      ]
     }
   }
 }
