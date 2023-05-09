@@ -25,7 +25,6 @@ import opentimelineio as otio
 
 
 def link_media_reference(in_clip, media_linker_argument_map):
-
     # Once https://github.com/TheFoundryVisionmongers/OpenAssetIO/issues/247
     # is implemented, we can more concisely handle ImageSequenceReference,
     # but we will need to convert file:///a/path/sequence.%04d.ext to the
@@ -55,36 +54,21 @@ def link_media_reference(in_clip, media_linker_argument_map):
     context = session_state.context
     ClipTrait(context.locale).setName(in_clip.name)
 
-    # Upon a successful resolve, use the concrete accessors of the trait
-    # as a view on the resolved data to ensure we access the correct
-    # keys/values.
-    def successful_resolve_callback(_, entity_data):
-        locatable = LocatableContentTrait(entity_data)
-        if locatable.isValid():
-            mr.target_url = LocatableContentTrait(entity_data).getLocation()
-        else:
-            raise exceptions.EntityResolutionError(
-                  "Failed to retrieve LocatableContent data",
-                  entity_reference)
-
-    def fail_and_throw(_, batch_element_error):
-        raise exceptions.EntityResolutionError(
-            batch_element_error.message, entity_reference
-        )
-
     # In this simple implementation, we only need the URL to the media,
     # so we use the LocatableContentTrait directly. As we don't know the
     # specifics of what the external reference may point to, using any
     # particular Specification's traits may end up being wrong. By
     # requesting just the specific trait we require, it avoids the
     # manager fetching any data we are not going to use.
-    manager.resolve(
-        [entity_reference],
-        {LocatableContentTrait.kId},
-        context,
-        successful_resolve_callback,
-        fail_and_throw,
-    )
+    try:
+        entity_data = manager.resolve(
+            entity_reference, {LocatableContentTrait.kId}, context
+        )
+        mr.target_url = LocatableContentTrait(entity_data).getLocation()
+    except Exception as exc:
+        raise exceptions.EntityResolutionError(
+            "Failed to resolve location from LocatableContent trait", entity_reference
+        ) from exc
 
 
 #
