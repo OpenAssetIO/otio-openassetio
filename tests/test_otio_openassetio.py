@@ -6,6 +6,7 @@ import pytest
 
 import opentimelineio as otio
 from openassetio import exceptions
+from openassetio.hostApi import ManagerFactory
 
 raw = """{
         "OTIO_SCHEMA": "Timeline.1",
@@ -111,9 +112,7 @@ def test_when_linker_used_with_incorrect_data_exception_thrown(
         )
 
 
-def test_when_manager_cant_be_found_exception_thrown(
-    bal_linker_args_malformed_manager
-):
+def test_when_manager_cant_be_found_exception_thrown(bal_linker_args_malformed_manager):
     with pytest.raises(exceptions.PluginError):
         otio.adapters.read_from_string(
             raw,
@@ -123,13 +122,53 @@ def test_when_manager_cant_be_found_exception_thrown(
 
 
 def test_when_no_locatable_content_trait_exception_thrown(
-    bal_linker_args_no_locatable_content
+    bal_linker_args_no_locatable_content,
 ):
     with pytest.raises(exceptions.EntityResolutionError):
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",
             media_linker_argument_map=bal_linker_args_no_locatable_content,
+        )
+
+
+def test_when_no_manager_setting_then_default_config_used(
+    linker_args_no_settings, monkeypatch
+):
+    # A bit nasty, but we don't have a portable way to populate a toml
+    # file with a library path that isn't sensitive to cwd, so assume
+    # that if we managed to specify BAL, without a library, then it is
+    # our test toml that was loaded by the default mechanism.
+    a_config = os.path.join(
+        os.path.dirname(__file__), "resources", "default_config.toml"
+    )
+    monkeypatch.setenv(ManagerFactory.kDefaultManagerConfigEnvVarName, a_config)
+
+    # Ensure any existing env doesn't affect the tests
+    monkeypatch.delenv("BAL_LIBRARY_PATH", raising=False)
+
+    with pytest.raises(
+        exceptions.PluginError,
+        match="'library_path'/BAL_LIBRARY_PATH not set or is empty",
+    ):
+        otio.adapters.read_from_string(
+            raw,
+            media_linker_name="openassetio_media_linker",
+            media_linker_argument_map=linker_args_no_settings,
+        )
+
+
+def test_when_no_manager_setting_and_no_default_config_then_error_raised(
+    linker_args_no_settings, monkeypatch
+):
+    monkeypatch.delenv(ManagerFactory.kDefaultManagerConfigEnvVarName, raising=False)
+    with pytest.raises(
+        RuntimeError, match="No default OpenAssetIO manager configured"
+    ):
+        otio.adapters.read_from_string(
+            raw,
+            media_linker_name="openassetio_media_linker",
+            media_linker_argument_map=linker_args_no_settings,
         )
 
 
@@ -201,3 +240,12 @@ def bal_linker_args_no_locatable_content():
             )
         },
     }
+
+
+@pytest.fixture()
+def linker_args_no_settings():
+    """
+    Provides an arguments dict for the media linker plugin that
+    doesn't include any OpenAssetIO manager settings.
+    """
+    return {}

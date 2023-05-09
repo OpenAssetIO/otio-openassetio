@@ -152,18 +152,26 @@ def _sessionState(args: dict) -> SessionState:
 def _createSessionState(args: dict) -> SessionState:
     """
     Configures a new SessionState with the manager + settings from the
-    supplied args. A new Context is created and configured for read NB
+    supplied args. A new Context is created and configured for read
     with the correct locale.
+
+    If no identifier is provided in the settings, then the OpenAssetIO
+    default manager config mechanism will be used as a fallback.
     """
 
     host = OTIOHostInterface()
     logger = log.SeverityFilter(log.ConsoleLogger())
     factory = PythonPluginSystemManagerImplementationFactory(logger)
 
-    manager = ManagerFactory.createManagerForInterface(
-        args["identifier"], host, factory, logger
-    )
-    manager.initialize(args["settings"])
+    if "identifier" in args:
+        manager = ManagerFactory.createManagerForInterface(
+            args["identifier"], host, factory, logger
+        )
+        manager.initialize(args["settings"])
+    else:
+        manager = ManagerFactory.defaultManagerForInterface(host, factory, logger)
+        if not manager:
+            raise RuntimeError("No default OpenAssetIO manager configured")
 
     # The lifetime of the context would ideally be tied to each specific
     # call to read_from_string or similar. Maybe we could introspect
