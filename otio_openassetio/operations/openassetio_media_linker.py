@@ -7,13 +7,10 @@ their target_url is set to a valid entity reference.
 
 from collections import namedtuple
 
-from openassetio import log, exceptions, SpecificationBase
+from openassetio import log, exceptions
 from openassetio.hostApi import HostInterface, ManagerFactory
 from openassetio.pluginSystem import PythonPluginSystemManagerImplementationFactory
 
-
-import openassetio_mediacreation
-from openassetio_mediacreation.traits.timeline import ClipTrait
 from openassetio_mediacreation.traits.content import LocatableContentTrait
 
 import opentimelineio as otio
@@ -49,11 +46,6 @@ def link_media_reference(in_clip, media_linker_argument_map):
     if not entity_reference:
         return
 
-    # Update the locale with more information about this call
-    # This is perhaps more illustrative than useful at this point.
-    context = session_state.context
-    ClipTrait(context.locale).setName(in_clip.name)
-
     # In this simple implementation, we only need the URL to the media,
     # so we use the LocatableContentTrait directly. As we don't know the
     # specifics of what the external reference may point to, using any
@@ -62,7 +54,7 @@ def link_media_reference(in_clip, media_linker_argument_map):
     # manager fetching any data we are not going to use.
     try:
         entity_data = manager.resolve(
-            entity_reference, {LocatableContentTrait.kId}, context
+            entity_reference, {LocatableContentTrait.kId}, session_state.context
         )
         mr.target_url = LocatableContentTrait(entity_data).getLocation()
     except Exception as exc:
@@ -96,20 +88,6 @@ class OTIOHostInterface(HostInterface):
 
     def displayName(self):
         return "OpenTimelineIO OpenAssetIO Media Linker plugin"
-
-
-class OTIOClipLocale(SpecificationBase):
-    """
-    An OpenAssetIO Locale that represents API calls for a track clip
-    """
-
-    kTraitSet = {
-        # Describe where we are in the OTIO structure a little
-        openassetio_mediacreation.traits.timeline.TimelineTrait.kId,
-        openassetio_mediacreation.traits.timeline.TrackTrait.kId,
-        openassetio_mediacreation.traits.timeline.ClipTrait.kId,
-        "otio",
-    }
 
 
 #
@@ -152,8 +130,7 @@ def _sessionState(args: dict) -> SessionState:
 def _createSessionState(args: dict) -> SessionState:
     """
     Configures a new SessionState with the manager + settings from the
-    supplied args. A new Context is created and configured for read
-    with the correct locale.
+    supplied args. A new Context is created and configured for read.
 
     If no identifier is provided in the settings, then the OpenAssetIO
     default manager config mechanism will be used as a fallback.
@@ -179,6 +156,5 @@ def _createSessionState(args: dict) -> SessionState:
     # now though and is better than making a context per clip.
     context = manager.createContext()
     context.access = context.Access.kRead
-    context.locale = OTIOClipLocale.create().traitsData()
 
     return SessionState(manager=manager, context=context)
