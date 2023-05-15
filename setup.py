@@ -28,8 +28,8 @@ setuptools.setup(
     },
     install_requires=[
         "OpenTimelineIO >= 0.12.0",
-        "openassetio == 1.0.0a7",
-        "openassetio-mediacreation == 1.0.0a2",
+        "openassetio == 1.0.0a10",
+        "openassetio-mediacreation == 1.0.0a4",
     ],
     extras_require={
         "dev": [
@@ -37,7 +37,7 @@ setuptools.setup(
             "pytest",
             "flake8",
             "twine",
-            "openassetio-manager-bal == 1.0.0a3"
+            "openassetio-manager-bal == 1.0.0a7"
         ]
     },
     classifiers=[

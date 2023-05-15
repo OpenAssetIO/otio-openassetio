@@ -7,13 +7,10 @@ their target_url is set to a valid entity reference.
 
 from collections import namedtuple
 
-from openassetio import log, exceptions, SpecificationBase
+from openassetio import log, exceptions
 from openassetio.hostApi import HostInterface, ManagerFactory
 from openassetio.pluginSystem import PythonPluginSystemManagerImplementationFactory
 
-
-import openassetio_mediacreation
-from openassetio_mediacreation.traits.timeline import ClipTrait
 from openassetio_mediacreation.traits.content import LocatableContentTrait
 
 import opentimelineio as otio
@@ -25,7 +22,6 @@ import opentimelineio as otio
 
 
 def link_media_reference(in_clip, media_linker_argument_map):
-
     # Once https://github.com/TheFoundryVisionmongers/OpenAssetIO/issues/247
     # is implemented, we can more concisely handle ImageSequenceReference,
     # but we will need to convert file:///a/path/sequence.%04d.ext to the
@@ -50,41 +46,21 @@ def link_media_reference(in_clip, media_linker_argument_map):
     if not entity_reference:
         return
 
-    # Update the locale with more information about this call
-    # This is perhaps more illustrative than useful at this point.
-    context = session_state.context
-    ClipTrait(context.locale).setName(in_clip.name)
-
-    # Upon a successful resolve, use the concrete accessors of the trait
-    # as a view on the resolved data to ensure we access the correct
-    # keys/values.
-    def successful_resolve_callback(_, entity_data):
-        locatable = LocatableContentTrait(entity_data)
-        if locatable.isValid():
-            mr.target_url = LocatableContentTrait(entity_data).getLocation()
-        else:
-            raise exceptions.EntityResolutionError(
-                  "Failed to retrieve LocatableContent data",
-                  entity_reference)
-
-    def fail_and_throw(_, batch_element_error):
-        raise exceptions.EntityResolutionError(
-            batch_element_error.message, entity_reference
-        )
-
     # In this simple implementation, we only need the URL to the media,
     # so we use the LocatableContentTrait directly. As we don't know the
     # specifics of what the external reference may point to, using any
     # particular Specification's traits may end up being wrong. By
     # requesting just the specific trait we require, it avoids the
     # manager fetching any data we are not going to use.
-    manager.resolve(
-        [entity_reference],
-        {LocatableContentTrait.kId},
-        context,
-        successful_resolve_callback,
-        fail_and_throw,
-    )
+    try:
+        entity_data = manager.resolve(
+            entity_reference, {LocatableContentTrait.kId}, session_state.context
+        )
+        mr.target_url = LocatableContentTrait(entity_data).getLocation()
+    except Exception as exc:
+        raise exceptions.EntityResolutionError(
+            "Failed to resolve location from LocatableContent trait", entity_reference
+        ) from exc
 
 
 #
@@ -112,20 +88,6 @@ class OTIOHostInterface(HostInterface):
 
     def displayName(self):
         return "OpenTimelineIO OpenAssetIO Media Linker plugin"
-
-
-class OTIOClipLocale(SpecificationBase):
-    """
-    An OpenAssetIO Locale that represents API calls for a track clip
-    """
-
-    kTraitSet = {
-        # Describe where we are in the OTIO structure a little
-        openassetio_mediacreation.traits.timeline.TimelineTrait.kId,
-        openassetio_mediacreation.traits.timeline.TrackTrait.kId,
-        openassetio_mediacreation.traits.timeline.ClipTrait.kId,
-        "otio",
-    }
 
 
 #
@@ -168,18 +130,25 @@ def _sessionState(args: dict) -> SessionState:
 def _createSessionState(args: dict) -> SessionState:
     """
     Configures a new SessionState with the manager + settings from the
-    supplied args. A new Context is created and configured for read NB
-    with the correct locale.
+    supplied args. A new Context is created and configured for read.
+
+    If no identifier is provided in the settings, then the OpenAssetIO
+    default manager config mechanism will be used as a fallback.
     """
 
     host = OTIOHostInterface()
     logger = log.SeverityFilter(log.ConsoleLogger())
     factory = PythonPluginSystemManagerImplementationFactory(logger)
 
-    manager = ManagerFactory.createManagerForInterface(
-        args["identifier"], host, factory, logger
-    )
-    manager.initialize(args["settings"])
+    if "identifier" in args:
+        manager = ManagerFactory.createManagerForInterface(
+            args["identifier"], host, factory, logger
+        )
+        manager.initialize(args["settings"])
+    else:
+        manager = ManagerFactory.defaultManagerForInterface(host, factory, logger)
+        if not manager:
+            raise RuntimeError("No default OpenAssetIO manager configured")
 
     # The lifetime of the context would ideally be tied to each specific
     # call to read_from_string or similar. Maybe we could introspect
@@ -187,6 +156,5 @@ def _createSessionState(args: dict) -> SessionState:
     # now though and is better than making a context per clip.
     context = manager.createContext()
     context.access = context.Access.kRead
-    context.locale = OTIOClipLocale.create().traitsData()
 
     return SessionState(manager=manager, context=context)
