@@ -8,6 +8,7 @@ their target_url is set to a valid entity reference.
 from collections import namedtuple
 
 from openassetio import log, exceptions
+from openassetio.access import ResolveAccess
 from openassetio.hostApi import HostInterface, ManagerFactory
 from openassetio.pluginSystem import PythonPluginSystemManagerImplementationFactory
 
@@ -54,7 +55,10 @@ def link_media_reference(in_clip, media_linker_argument_map):
     # manager fetching any data we are not going to use.
     try:
         entity_data = manager.resolve(
-            entity_reference, {LocatableContentTrait.kId}, session_state.context
+            entity_reference,
+            {LocatableContentTrait.kId},
+            ResolveAccess.kRead,
+            session_state.context,
         )
         mr.target_url = LocatableContentTrait(entity_data).getLocation()
     except Exception as exc:
@@ -155,6 +159,5 @@ def _createSessionState(args: dict) -> SessionState:
     # each clip and see which Timeline it belongs to. This will do for
     # now though and is better than making a context per clip.
     context = manager.createContext()
-    context.access = context.Access.kRead
 
     return SessionState(manager=manager, context=context)
