@@ -7,7 +7,7 @@ their target_url is set to a valid entity reference.
 
 from collections import namedtuple
 
-from openassetio import log, exceptions
+from openassetio import log, errors
 from openassetio.access import ResolveAccess
 from openassetio.hostApi import HostInterface, ManagerFactory
 from openassetio.pluginSystem import PythonPluginSystemManagerImplementationFactory
@@ -60,9 +60,12 @@ def link_media_reference(in_clip, media_linker_argument_map):
             ResolveAccess.kRead,
             session_state.context,
         )
-        mr.target_url = LocatableContentTrait(entity_data).getLocation()
+        target_url = LocatableContentTrait(entity_data).getLocation()
+        if target_url is None:
+            raise ValueError(f"Entity '{entity_reference}' has no location")
+        mr.target_url = target_url
     except Exception as exc:
-        raise exceptions.EntityResolutionError(
+        raise errors.OpenAssetIOException(
             "Failed to resolve location from LocatableContent trait", entity_reference
         ) from exc
 

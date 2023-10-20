@@ -5,7 +5,7 @@ import os
 import pytest
 
 import opentimelineio as otio
-from openassetio import exceptions
+from openassetio import errors
 from openassetio.hostApi import ManagerFactory
 
 raw = """{
@@ -104,7 +104,7 @@ def test_when_linker_used_then_references_are_resolved(bal_linker_args):
 def test_when_linker_used_with_incorrect_data_exception_thrown(
     bal_linker_args_missing_asset,
 ):
-    with pytest.raises(exceptions.EntityResolutionError):
+    with pytest.raises(errors.OpenAssetIOException):
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",
@@ -113,7 +113,7 @@ def test_when_linker_used_with_incorrect_data_exception_thrown(
 
 
 def test_when_manager_cant_be_found_exception_thrown(bal_linker_args_malformed_manager):
-    with pytest.raises(exceptions.PluginError):
+    with pytest.raises(errors.InputValidationException):
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",
@@ -124,13 +124,15 @@ def test_when_manager_cant_be_found_exception_thrown(bal_linker_args_malformed_m
 def test_when_no_locatable_content_trait_exception_thrown(
     bal_linker_args_no_locatable_content,
 ):
-    with pytest.raises(exceptions.EntityResolutionError):
+    with pytest.raises(errors.OpenAssetIOException) as err:
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",
             media_linker_argument_map=bal_linker_args_no_locatable_content,
         )
 
+    assert isinstance(err.value.__cause__, ValueError)
+    assert str(err.value.__cause__) == "Entity 'bal:///asset1' has no location"
 
 def test_when_no_manager_setting_then_default_config_used(
     linker_args_no_settings, monkeypatch
@@ -148,7 +150,7 @@ def test_when_no_manager_setting_then_default_config_used(
     monkeypatch.delenv("BAL_LIBRARY_PATH", raising=False)
 
     with pytest.raises(
-        exceptions.PluginError,
+        errors.ConfigurationException,
         match="'library_path'/BAL_LIBRARY_PATH not set or is empty",
     ):
         otio.adapters.read_from_string(
