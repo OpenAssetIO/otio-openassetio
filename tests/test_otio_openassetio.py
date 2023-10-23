@@ -134,6 +134,7 @@ def test_when_no_locatable_content_trait_exception_thrown(
     assert isinstance(err.value.__cause__, ValueError)
     assert str(err.value.__cause__) == "Entity 'bal:///asset1' has no location"
 
+
 def test_when_no_manager_setting_then_default_config_used(
     linker_args_no_settings, monkeypatch
 ):
@@ -164,9 +165,7 @@ def test_when_no_manager_setting_and_no_default_config_then_error_raised(
     linker_args_no_settings, monkeypatch
 ):
     monkeypatch.delenv(ManagerFactory.kDefaultManagerConfigEnvVarName, raising=False)
-    with pytest.raises(
-        RuntimeError, match="No default OpenAssetIO manager configured"
-    ):
+    with pytest.raises(RuntimeError, match="No default OpenAssetIO manager configured"):
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",
