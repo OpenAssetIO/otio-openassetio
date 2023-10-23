@@ -1,12 +1,14 @@
 # Copyright The Foundry Visionmongers Ltd
 # SPDX-License-Identifier: Apache-2.0
 import os
+from unittest import mock
 
 import pytest
 
 import opentimelineio as otio
 from openassetio import errors
-from openassetio.hostApi import ManagerFactory
+from openassetio.hostApi import ManagerFactory, Manager
+
 
 raw = """{
         "OTIO_SCHEMA": "Timeline.1",
@@ -121,6 +123,24 @@ def test_when_manager_cant_be_found_exception_thrown(bal_linker_args_malformed_m
         )
 
 
+def test_when_manager_cant_resolve_then_exception_thrown(bal_linker_args, monkeypatch):
+    hasCapability = mock.Mock(spec=Manager.hasCapability)
+    monkeypatch.setattr(Manager, "hasCapability", hasCapability)
+    hasCapability.return_value = False
+
+    with pytest.raises(
+        errors.ConfigurationException,
+        match="Basic Asset Library 📖 is not capable of resolving entity references",
+    ):
+        otio.adapters.read_from_string(
+            raw,
+            media_linker_name="openassetio_media_linker",
+            media_linker_argument_map=bal_linker_args,
+        )
+
+    hasCapability.assert_called_once_with(Manager.Capability.kResolution)
+
+
 def test_when_no_locatable_content_trait_exception_thrown(
     bal_linker_args_no_locatable_content,
 ):
@@ -165,7 +185,9 @@ def test_when_no_manager_setting_and_no_default_config_then_error_raised(
     linker_args_no_settings, monkeypatch
 ):
     monkeypatch.delenv(ManagerFactory.kDefaultManagerConfigEnvVarName, raising=False)
-    with pytest.raises(RuntimeError, match="No default OpenAssetIO manager configured"):
+    with pytest.raises(
+        errors.ConfigurationException, match="No default OpenAssetIO manager configured"
+    ):
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",

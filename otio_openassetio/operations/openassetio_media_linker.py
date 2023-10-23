@@ -155,7 +155,14 @@ def _createSessionState(args: dict) -> SessionState:
     else:
         manager = ManagerFactory.defaultManagerForInterface(host, factory, logger)
         if not manager:
-            raise RuntimeError("No default OpenAssetIO manager configured")
+            raise errors.ConfigurationException(
+                "No default OpenAssetIO manager configured"
+            )
+
+    if not manager.hasCapability(manager.Capability.kResolution):
+        raise errors.ConfigurationException(
+            f"{manager.displayName()} is not capable of resolving entity references"
+        )
 
     # The lifetime of the context would ideally be tied to each specific
     # call to read_from_string or similar. Maybe we could introspect
