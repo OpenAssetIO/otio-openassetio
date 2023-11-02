@@ -1,12 +1,14 @@
 # Copyright The Foundry Visionmongers Ltd
 # SPDX-License-Identifier: Apache-2.0
 import os
+from unittest import mock
 
 import pytest
 
 import opentimelineio as otio
-from openassetio import exceptions
-from openassetio.hostApi import ManagerFactory
+from openassetio import errors
+from openassetio.hostApi import ManagerFactory, Manager
+
 
 raw = """{
         "OTIO_SCHEMA": "Timeline.1",
@@ -104,7 +106,7 @@ def test_when_linker_used_then_references_are_resolved(bal_linker_args):
 def test_when_linker_used_with_incorrect_data_exception_thrown(
     bal_linker_args_missing_asset,
 ):
-    with pytest.raises(exceptions.EntityResolutionError):
+    with pytest.raises(errors.OpenAssetIOException):
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",
@@ -113,7 +115,7 @@ def test_when_linker_used_with_incorrect_data_exception_thrown(
 
 
 def test_when_manager_cant_be_found_exception_thrown(bal_linker_args_malformed_manager):
-    with pytest.raises(exceptions.PluginError):
+    with pytest.raises(errors.InputValidationException):
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",
@@ -121,15 +123,36 @@ def test_when_manager_cant_be_found_exception_thrown(bal_linker_args_malformed_m
         )
 
 
+def test_when_manager_cant_resolve_then_exception_thrown(bal_linker_args, monkeypatch):
+    hasCapability = mock.Mock(spec=Manager.hasCapability)
+    monkeypatch.setattr(Manager, "hasCapability", hasCapability)
+    hasCapability.return_value = False
+
+    with pytest.raises(
+        errors.ConfigurationException,
+        match="Basic Asset Library 📖 is not capable of resolving entity references",
+    ):
+        otio.adapters.read_from_string(
+            raw,
+            media_linker_name="openassetio_media_linker",
+            media_linker_argument_map=bal_linker_args,
+        )
+
+    hasCapability.assert_called_once_with(Manager.Capability.kResolution)
+
+
 def test_when_no_locatable_content_trait_exception_thrown(
     bal_linker_args_no_locatable_content,
 ):
-    with pytest.raises(exceptions.EntityResolutionError):
+    with pytest.raises(errors.OpenAssetIOException) as err:
         otio.adapters.read_from_string(
             raw,
             media_linker_name="openassetio_media_linker",
             media_linker_argument_map=bal_linker_args_no_locatable_content,
         )
+
+    assert isinstance(err.value.__cause__, ValueError)
+    assert str(err.value.__cause__) == "Entity 'bal:///asset1' has no location"
 
 
 def test_when_no_manager_setting_then_default_config_used(
@@ -148,7 +171,7 @@ def test_when_no_manager_setting_then_default_config_used(
     monkeypatch.delenv("BAL_LIBRARY_PATH", raising=False)
 
     with pytest.raises(
-        exceptions.PluginError,
+        errors.ConfigurationException,
         match="'library_path'/BAL_LIBRARY_PATH not set or is empty",
     ):
         otio.adapters.read_from_string(
@@ -163,7 +186,7 @@ def test_when_no_manager_setting_and_no_default_config_then_error_raised(
 ):
     monkeypatch.delenv(ManagerFactory.kDefaultManagerConfigEnvVarName, raising=False)
     with pytest.raises(
-        RuntimeError, match="No default OpenAssetIO manager configured"
+        errors.ConfigurationException, match="No default OpenAssetIO manager configured"
     ):
         otio.adapters.read_from_string(
             raw,

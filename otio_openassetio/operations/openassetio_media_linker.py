@@ -7,7 +7,7 @@ their target_url is set to a valid entity reference.
 
 from collections import namedtuple
 
-from openassetio import log, exceptions
+from openassetio import log, errors
 from openassetio.access import ResolveAccess
 from openassetio.hostApi import HostInterface, ManagerFactory
 from openassetio.pluginSystem import PythonPluginSystemManagerImplementationFactory
@@ -60,9 +60,12 @@ def link_media_reference(in_clip, media_linker_argument_map):
             ResolveAccess.kRead,
             session_state.context,
         )
-        mr.target_url = LocatableContentTrait(entity_data).getLocation()
+        target_url = LocatableContentTrait(entity_data).getLocation()
+        if target_url is None:
+            raise ValueError(f"Entity '{entity_reference}' has no location")
+        mr.target_url = target_url
     except Exception as exc:
-        raise exceptions.EntityResolutionError(
+        raise errors.OpenAssetIOException(
             "Failed to resolve location from LocatableContent trait", entity_reference
         ) from exc
 
@@ -152,7 +155,14 @@ def _createSessionState(args: dict) -> SessionState:
     else:
         manager = ManagerFactory.defaultManagerForInterface(host, factory, logger)
         if not manager:
-            raise RuntimeError("No default OpenAssetIO manager configured")
+            raise errors.ConfigurationException(
+                "No default OpenAssetIO manager configured"
+            )
+
+    if not manager.hasCapability(manager.Capability.kResolution):
+        raise errors.ConfigurationException(
+            f"{manager.displayName()} is not capable of resolving entity references"
+        )
 
     # The lifetime of the context would ideally be tied to each specific
     # call to read_from_string or similar. Maybe we could introspect
